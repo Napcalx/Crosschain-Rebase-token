@@ -198,11 +198,8 @@ contract RebaseTokenTest is Test {
         );
     }
 
-    function testTransferFromWithAllowance(
-        uint256 allowance /*uint256 amount */
-    ) public {
+    function testTransferFromWithAllowance(uint256 allowance) public {
         allowance = bound(allowance, 1e5, type(uint96).max);
-        //amount = bound(amount, 1e5, type(uint96).max);
 
         vm.deal(owner, allowance);
         vm.prank(owner);
@@ -228,5 +225,113 @@ contract RebaseTokenTest is Test {
         assertEq(ownerBalanceAfter, ownerBalance - allowance);
         assertEq(user1BalanceAfter, user1Balance + allowance);
         assertEq(userAllowanceAfter, userAllowanceBefore - allowance);
+    }
+
+    function testTransferFromWithMaxUintAllowance(
+        uint256 depositAmount,
+        uint256 amountSent
+    ) public {
+        depositAmount = bound(depositAmount, 1e5 + 1e5, type(uint96).max);
+        amountSent = bound(amountSent, 1e5, depositAmount - 1e5);
+
+        // fund owner with Eth and Deposit into vault
+        vm.deal(owner, depositAmount);
+        vm.prank(owner);
+        vault.deposit{value: depositAmount}();
+
+        // Approve spender with Max uint256 allowance
+        vm.prank(owner);
+        rebaseToken.approve(user, type(uint256).max);
+
+        address user1 = makeAddr("user1");
+        uint256 ownerBalance = rebaseToken.balanceOf(owner);
+        uint256 user1Balance = rebaseToken.balanceOf(user1);
+        uint256 userAllowanceBefore = rebaseToken.allowance(owner, user);
+        console.log("Owner's Balance", ownerBalance);
+        console.log("User1 Balance", user1Balance);
+        console.log("User's Allowance Before", userAllowanceBefore);
+
+        vm.prank(user);
+        rebaseToken.transferFrom(owner, user1, amountSent);
+
+        uint256 ownerBalanceAfter = rebaseToken.balanceOf(owner);
+        uint256 user1BalanceAfter = rebaseToken.balanceOf(user1);
+        uint256 userAllowanceAfter = rebaseToken.allowance(owner, user);
+
+        // Assert the balances and allowance are updated correctly
+        assertEq(ownerBalanceAfter, ownerBalance - amountSent);
+        assertEq(user1BalanceAfter, user1Balance + amountSent);
+
+        //If allowance was uint256.max, it should not reduce
+        assertEq(userAllowanceAfter, type(uint256).max);
+    }
+
+    function testTransferWithMaxAmount(uint256 depositAmount) public {
+        depositAmount = bound(depositAmount, 1e5, type(uint96).max);
+
+        vm.deal(user, depositAmount);
+        vm.prank(user);
+        vault.deposit{value: depositAmount}();
+
+        address user1 = makeAddr("user1");
+        vm.prank(user);
+        rebaseToken.transfer(user1, type(uint256).max);
+
+        uint256 userBalance = rebaseToken.balanceOf(user);
+        uint256 user1Balance = rebaseToken.balanceOf(user1);
+
+        assertEq(userBalance, 0);
+        assertEq(user1Balance, depositAmount);
+    }
+
+    function testTransferFromWithMaxUintAmount(uint256 amount) public {
+        amount = bound(amount, 1e5, type(uint96).max);
+
+        vm.deal(owner, amount);
+        vm.prank(owner);
+        vault.deposit{value: amount}();
+
+        vm.prank(owner);
+        rebaseToken.approve(user, type(uint256).max);
+        address user1 = makeAddr("user1");
+
+        uint256 ownerBalance = rebaseToken.balanceOf(owner);
+        uint256 user1Balance = rebaseToken.balanceOf(user1);
+
+        vm.prank(user);
+        rebaseToken.transferFrom(owner, user1, type(uint256).max);
+
+        uint256 ownerBalanceAfter = rebaseToken.balanceOf(owner);
+        uint256 user1BalanceAfter = rebaseToken.balanceOf(user1);
+
+        // Assert the balances and allowance are updated correctly
+        assertEq(ownerBalanceAfter, ownerBalance - amount);
+        assertEq(user1BalanceAfter, user1Balance + amount);
+    }
+
+    function testRedeemFailsIfEthTransferFails(uint256 amount) public {
+        amount = bound(amount, 1e5, type(uint96).max);
+        RevertingReceiver badReceiver = new RevertingReceiver();
+
+        // Give it some RebaseTokens
+        vm.deal(address(badReceiver), 0);
+        vm.deal(address(this), amount);
+
+        // Deposit from this contract and transfer to badReceiver
+        vault.deposit{value: amount}();
+        rebaseToken.transfer(address(badReceiver), amount);
+
+        // Try redeeming from badReceiver
+        vm.expectRevert(Vault.Vault__RedeemFailed.selector);
+        vm.prank(address(badReceiver));
+        vault.redeem(type(uint256).max);
+    }
+}
+
+contract RevertingReceiver {
+    // fallback that rejects ETH
+
+    receive() external payable {
+        revert("Can't accept ETH");
     }
 }
