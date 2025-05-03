@@ -171,4 +171,62 @@ contract RebaseTokenTest is Test {
         rebaseToken.setInterestRate(newInterestRate);
         assertEq(rebaseToken.getInterestRate(), initInterestRate);
     }
+
+    function testTransferMintsAccruedInterestToBothUsers(
+        uint256 mintAmount,
+        uint256 amountSent
+    ) public {
+        mintAmount = bound(mintAmount, 1e5 + 1e5, type(uint96).max);
+        amountSent = bound(amountSent, 1e5, mintAmount - 1e5);
+        vm.deal(user, mintAmount);
+        vm.prank(user);
+        vault.deposit{value: mintAmount}();
+
+        address user2 = makeAddr("user2");
+        uint256 userBalance = rebaseToken.balanceOf(user);
+        uint256 user2Balance = rebaseToken.balanceOf(user2);
+        assertEq(userBalance, mintAmount);
+        assertEq(user2Balance, 0);
+
+        vm.warp(block.timestamp + 1.5 hours);
+        vm.prank(user);
+        rebaseToken.transfer(user2, amountSent);
+
+        assertEq(
+            rebaseToken.getUserInterestrate(user),
+            rebaseToken.getUserInterestrate(user2)
+        );
+    }
+
+    function testTransferFromWithAllowance(
+        uint256 allowance /*uint256 amount */
+    ) public {
+        allowance = bound(allowance, 1e5, type(uint96).max);
+        //amount = bound(amount, 1e5, type(uint96).max);
+
+        vm.deal(owner, allowance);
+        vm.prank(owner);
+        vault.deposit{value: allowance}();
+
+        vm.prank(owner);
+        rebaseToken.approve(user, allowance);
+
+        address user1 = makeAddr("user1");
+
+        uint256 ownerBalance = rebaseToken.balanceOf(owner);
+        uint256 user1Balance = rebaseToken.balanceOf(user1);
+        uint256 userAllowanceBefore = rebaseToken.allowance(owner, user);
+
+        vm.prank(user);
+        rebaseToken.transferFrom(owner, user1, allowance);
+
+        uint256 ownerBalanceAfter = rebaseToken.balanceOf(owner);
+        uint256 user1BalanceAfter = rebaseToken.balanceOf(user1);
+        uint256 userAllowanceAfter = rebaseToken.allowance(owner, user);
+
+        // Assert the balances and allowance are updated correctly
+        assertEq(ownerBalanceAfter, ownerBalance - allowance);
+        assertEq(user1BalanceAfter, user1Balance + allowance);
+        assertEq(userAllowanceAfter, userAllowanceBefore - allowance);
+    }
 }
