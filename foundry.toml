@@ -2,6 +2,12 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-remappings = ["@openzeppelin/=lib/openzeppelin-contracts/"]
 
+remappings = [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "@ccip/=lib/ccip/",
+    "@chainlink/local/=lib/chainlink-local/",
+]
+
+rpc_endpoints = { sepolia-eth = "", arb-sepolia = "https://crimson-delicate-meme.arbitrum-sepolia.quiknode.pro/f79f724c0d0a70135f661911d7405e01fb12012f/" }
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
