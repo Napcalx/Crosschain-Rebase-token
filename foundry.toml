@@ -9,5 +9,5 @@ remappings = [
     "@chainlink/local/=lib/chainlink-local/",
 ]
 
-rpc_endpoints = { sepolia-eth = "", arb-sepolia = "https://crimson-delicate-meme.arbitrum-sepolia.quiknode.pro/f79f724c0d0a70135f661911d7405e01fb12012f/" }
+rpc_endpoints = { sepolia = "https://eth-sepolia.g.alchemy.com/v2/TB7iNy_7-Mx4c2xX8CxvMvZe2dvnDJoi", arb-sepolia = "https://crimson-delicate-meme.arbitrum-sepolia.quiknode.pro/f79f724c0d0a70135f661911d7405e01fb12012f/" }
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
