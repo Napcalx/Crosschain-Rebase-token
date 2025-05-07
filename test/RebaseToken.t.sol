@@ -120,8 +120,8 @@ contract RebaseTokenTest is Test {
         assertEq(userNBalanceAfter, amountToSend);
 
         // check the user interest rate has been inherited
-        assertEq(rebaseToken.getUserInterestrate(user), 5e10);
-        assertEq(rebaseToken.getUserInterestrate(userN), 5e10);
+        assertEq(rebaseToken.getUserInterestRate(user), 5e10);
+        assertEq(rebaseToken.getUserInterestRate(userN), 5e10);
     }
 
     function testCannotSetInterestRate(uint256 newInterestRate) public {
@@ -193,8 +193,8 @@ contract RebaseTokenTest is Test {
         rebaseToken.transfer(user2, amountSent);
 
         assertEq(
-            rebaseToken.getUserInterestrate(user),
-            rebaseToken.getUserInterestrate(user2)
+            rebaseToken.getUserInterestRate(user),
+            rebaseToken.getUserInterestRate(user2)
         );
     }
 
