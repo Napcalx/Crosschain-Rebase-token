@@ -24,6 +24,16 @@ contract TokenAndPoolDeployer is Script {
             networkDetails.rmnProxyAddress,
             networkDetails.routerAddress
         );
+        vm.stopBroadcast();
+    }
+}
+
+contract SetPermissions is Script {
+    function run(RebaseToken token, RebaseTokenPool pool) public {
+        CCIPLocalSimulatorFork ccipLocalSimulatorFork = new CCIPLocalSimulatorFork();
+        Register.NetworkDetails memory networkDetails = ccipLocalSimulatorFork
+            .getNetworkDetails(block.chainid);
+        vm.startBroadcast();
         token.grantMintAndBurnRole(address(pool));
         RegistryModuleOwnerCustom(
             networkDetails.registryModuleOwnerCustomAddress
